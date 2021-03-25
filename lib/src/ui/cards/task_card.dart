@@ -13,7 +13,6 @@ class TaskCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
     return Card(
       child: Container(
         padding: EdgeInsets.all(5),
@@ -42,11 +41,11 @@ class TaskCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: <Widget>[
                   Card(
-                    color: task.level.color,
+                    color: CommonUtils.createPriorityList()[task.level].color,
                     child: Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Text(
-                        task.level.title,
+                        CommonUtils.createPriorityList()[task.level].title,
                         style: TextStyle(fontSize: 11, color: Colors.white),
                       ),
                     ),

@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:firebasechat/src/bloc/home_bloc.dart';
 import 'package:firebasechat/src/modals/task.dart';
 import 'package:firebasechat/src/ui/cards/task_card.dart';
-import 'package:firebasechat/src/utils/app_utils.dart';
 import 'package:firebasechat/src/utils/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
@@ -22,12 +21,14 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    bloc = HomeBloc(List());
-    listTask = List();
+    bloc = HomeBloc();
+    listTask = [];
 
     bloc.taskSubscription.onData((data) {
       print("Listen Any changes here");
     });
+
+    bloc.fetchAllTasks();
   }
 
   @override
@@ -50,7 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           if (task != null) {
             listTask.add(task);
-            bloc.taskSink.add(listTask);
+            bloc.saveTask(task);
           }
         },
         child: Icon(Icons.add),
@@ -59,35 +60,39 @@ class _HomeScreenState extends State<HomeScreen> {
         alignment: Alignment.center,
         child: StreamBuilder<List<TodoTask>>(
             stream: bloc.taskStream,
-            initialData: List(),
             builder: (context, snapshot) {
-              listTask = snapshot.data;
-              if (snapshot.data.length != 0) {
-                return ListView.builder(
-                  itemBuilder: (buildContext, index) {
-                    return TaskCard(
-                      task: listTask[index],
-                      onDelete: () {
-                        listTask.removeAt(index);
-                        bloc.taskSink.add(listTask);
-                      },
-                    );
-                  },
-                  itemCount: listTask.length,
-                );
+              if (snapshot.hasData) {
+                listTask = snapshot.data;
+                if (snapshot.data.length != 0) {
+                  return ListView.builder(
+                    itemBuilder: (buildContext, index) {
+                      return TaskCard(
+                        task: listTask[index],
+                        onDelete: () {
+                          bloc.delete(listTask[index]);
+                          /*listTask.removeAt(index);
+                          bloc.taskSink.add(listTask);*/
+                        },
+                      );
+                    },
+                    itemCount: listTask.length,
+                  );
+                } else {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        Icon(
+                          Icons.list,
+                          color: Colors.black,
+                        ),
+                        Text("No task is added yet!")
+                      ],
+                    ),
+                  );
+                }
               } else {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      Icon(
-                        Icons.list,
-                        color: Colors.black,
-                      ),
-                      Text("No task is added yet!")
-                    ],
-                  ),
-                );
+                return CircularProgressIndicator();
               }
             }),
       ),

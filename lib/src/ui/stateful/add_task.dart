@@ -208,13 +208,12 @@ class _AddTaskState extends State<AddTask> {
 
   saveTask() {
     TodoTask task = TodoTask(
-        id: length,
         title: titleController.text,
         description: descriptionController.text,
         taskDate: dateTime.toIso8601String(),
         createdDate: DateTime.now().toIso8601String(),
-        level: selectedPriority,
-        isCompleted: false);
+        level: selectedPriority.index,
+        isCompleted: 0);
 
     Navigator.of(context).pop(task);
   }

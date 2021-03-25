@@ -1,16 +1,31 @@
+import 'dart:io';
+
 import 'package:firebasechat/src/modals/priority.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class CommonUtils {
-  static List<PriorityLevel> createPriorityList() {
-    List<PriorityLevel> list = List();
 
-    list.add(PriorityLevel(
+  static Future<bool> isNetworkAvailable() async {
+    try {
+      final result = await InternetAddress.lookup('google.com');
+      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+        return true;
+      }
+    } on SocketException catch (_) {
+      return false;
+    }
+    return false;
+  }
+
+  static List<PriorityLevel> createPriorityList() {
+    List<PriorityLevel> list = [];
+
+    list.add(PriorityLevel(0,
         title: "High", priority: Priority.High, color: Colors.red));
-    list.add(PriorityLevel(
+    list.add(PriorityLevel(1,
         title: "Medium", priority: Priority.Medium, color: Colors.green));
-    list.add(PriorityLevel(
+    list.add(PriorityLevel(2,
         title: "Low", priority: Priority.Low, color: Colors.blueAccent));
 
     return list;
