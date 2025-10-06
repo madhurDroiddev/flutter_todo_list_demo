@@ -1,101 +1,150 @@
 import 'dart:async';
 
-import 'package:firebasechat/src/bloc/home_bloc.dart';
-import 'package:firebasechat/src/modals/task.dart';
-import 'package:firebasechat/src/ui/cards/task_card.dart';
-import 'package:firebasechat/src/utils/routes.dart';
+import 'package:task_manager/src/bloc/home_bloc.dart';
+import 'package:task_manager/src/modals/task.dart';
+import 'package:task_manager/src/ui/cards/task_card.dart';
+import 'package:task_manager/src/utils/routes.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 
 class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  HomeBloc bloc;
-
-  List<TodoTask> listTask;
+  late HomeBloc _bloc;
+  List<TodoTask> _taskList = [];
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-    bloc = HomeBloc();
-    listTask = [];
-
-    bloc.taskSubscription.onData((data) {
-      print("Listen Any changes here");
-    });
-
-    bloc.fetchAllTasks();
+    _bloc = HomeBloc();
+    _bloc.fetchAllTasks();
   }
 
   @override
   void dispose() {
-    // TODO: implement dispose
+    _bloc.dispose();
     super.dispose();
-    bloc.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Task", style: TextStyle(color: Colors.white)),
+        title: const Text("Tasks"),
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        elevation: 0,
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          var task = await Navigator.of(context).pushNamed(Routes.addTask,
-              arguments: {'length': listTask.length});
-
-          if (task != null) {
-            listTask.add(task);
-            bloc.saveTask(task);
-          }
-        },
-        child: Icon(Icons.add),
+        onPressed: _navigateToAddTask,
+        child: const Icon(Icons.add),
       ),
-      body: Container(
-        alignment: Alignment.center,
-        child: StreamBuilder<List<TodoTask>>(
-            stream: bloc.taskStream,
-            builder: (context, snapshot) {
-              if (snapshot.hasData) {
-                listTask = snapshot.data;
-                if (snapshot.data.length != 0) {
-                  return ListView.builder(
-                    itemBuilder: (buildContext, index) {
-                      return TaskCard(
-                        task: listTask[index],
-                        onDelete: () {
-                          bloc.delete(listTask[index]);
-                          /*listTask.removeAt(index);
-                          bloc.taskSink.add(listTask);*/
-                        },
-                      );
-                    },
-                    itemCount: listTask.length,
+      body: StreamBuilder<List<TodoTask>>(
+        stream: _bloc.taskStream,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: Colors.red,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error loading tasks',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  ElevatedButton(
+                    onPressed: () => _bloc.fetchAllTasks(),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          if (snapshot.hasData) {
+            _taskList = snapshot.data!;
+            if (_taskList.isNotEmpty) {
+              return ListView.builder(
+                padding: const EdgeInsets.all(8),
+                itemCount: _taskList.length,
+                itemBuilder: (context, index) {
+                  return TaskCard(
+                    task: _taskList[index],
+                    onDelete: () => _bloc.delete(_taskList[index]),
+                    onToggleComplete: () => _toggleTaskComplete(_taskList[index]),
                   );
-                } else {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: <Widget>[
-                        Icon(
-                          Icons.list,
-                          color: Colors.black,
-                        ),
-                        Text("No task is added yet!")
-                      ],
-                    ),
-                  );
-                }
-              } else {
-                return CircularProgressIndicator();
-              }
-            }),
+                },
+              );
+            } else {
+              return _buildEmptyState();
+            }
+          }
+
+          return _buildEmptyState();
+        },
       ),
     );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.task_alt,
+            size: 64,
+            color: Colors.grey[400],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No tasks yet!',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              color: Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Tap the + button to add your first task',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.grey[500],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _navigateToAddTask() async {
+    final task = await Navigator.of(context).pushNamed(
+      Routes.addTask,
+      arguments: {'length': _taskList.length},
+    );
+
+    if (task != null && task is TodoTask) {
+      await _bloc.saveTask(task);
+    }
+  }
+
+  Future<void> _toggleTaskComplete(TodoTask task) async {
+    final updatedTask = task.copyWith(
+      isCompleted: task.isCompleted == 1 ? 0 : 1,
+    );
+    await _bloc.updateTask(updatedTask);
   }
 }

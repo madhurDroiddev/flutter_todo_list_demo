@@ -1,4 +1,4 @@
-import 'package:firebasechat/src/utils/app_utils.dart';
+import 'package:task_manager/src/utils/app_utils.dart';
 
 abstract class Bloc {
   void dispose();

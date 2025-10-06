@@ -1,39 +1,65 @@
 import 'dart:async';
 
-import 'package:firebasechat/src/utils/routes.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:task_manager/src/utils/routes.dart';
 import 'package:flutter/material.dart';
 
 class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
   @override
-  _SplashScreenState createState() => _SplashScreenState();
+  State<SplashScreen> createState() => _SplashScreenState();
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-  final int SPLASH_TIME_OUT = 3;
+  static const int splashTimeOut = 3;
 
   @override
   void initState() {
     super.initState();
-
-    initTimer(context);
+    _initTimer();
   }
 
   @override
   Widget build(BuildContext context) {
-
-    return Container(
-      color: Colors.white,
-      alignment: Alignment.center,
-      child: FlutterLogo(
-        size: 100,
+    return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.primary,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.task_alt,
+              size: 100,
+              color: Colors.white,
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Task Manager',
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Organize your tasks efficiently',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.white70,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  initTimer(BuildContext context) {
-    Future.delayed(Duration(seconds: SPLASH_TIME_OUT)).then((value) {
-      Navigator.of(context).pushReplacementNamed(Routes.homeDashBoard);
+  void _initTimer() {
+    Timer(const Duration(seconds: splashTimeOut), () {
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed(Routes.homeDashBoard);
+      }
     });
   }
 }

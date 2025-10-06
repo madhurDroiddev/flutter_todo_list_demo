@@ -1,204 +1,162 @@
 import 'dart:async';
 
-import 'package:firebasechat/src/modals/priority.dart';
-import 'package:firebasechat/src/modals/task.dart';
-import 'package:firebasechat/src/utils/app_utils.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:task_manager/src/modals/priority.dart';
+import 'package:task_manager/src/modals/task.dart';
+import 'package:task_manager/src/utils/app_utils.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/painting.dart';
-import 'package:flutter/widgets.dart';
 
 class AddTask extends StatefulWidget {
   final int length;
 
-  const AddTask({Key key, this.length}) : super(key: key);
+  const AddTask({super.key, required this.length});
 
   @override
-  _AddTaskState createState() => _AddTaskState(this.length);
+  State<AddTask> createState() => _AddTaskState();
 }
 
 class _AddTaskState extends State<AddTask> {
-  TextEditingController titleController;
-  TextEditingController dateController;
-  TextEditingController descriptionController;
+  late TextEditingController _titleController;
+  late TextEditingController _dateController;
+  late TextEditingController _descriptionController;
 
-  DateTime dateTime;
+  DateTime? _selectedDateTime;
+  List<PriorityLevel> _priorityLevelList = [];
+  PriorityLevel? _selectedPriority;
 
-  final int length;
-
-  List<PriorityLevel> priorityLevelList;
-
-  StreamController<List<PriorityLevel>> _streamController;
-
-  _AddTaskState(this.length);
-
-  PriorityLevel selectedPriority;
+  final StreamController<List<PriorityLevel>> _streamController =
+      StreamController<List<PriorityLevel>>.broadcast();
 
   @override
   void initState() {
     super.initState();
-
-    _streamController = StreamController.broadcast();
-
-    titleController = TextEditingController();
-    dateController = TextEditingController();
-    descriptionController = TextEditingController();
-
-    priorityLevelList = CommonUtils.createPriorityList();
+    _titleController = TextEditingController();
+    _dateController = TextEditingController();
+    _descriptionController = TextEditingController();
+    _priorityLevelList = CommonUtils.createPriorityList();
   }
 
   @override
   void dispose() {
+    _titleController.dispose();
+    _dateController.dispose();
+    _descriptionController.dispose();
+    _streamController.close();
     super.dispose();
-
-    titleController?.dispose();
-    dateController?.dispose();
-    descriptionController?.dispose();
-
-    _streamController?.close();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          "Add Task",
-          style: TextStyle(color: Colors.white),
-        ),
-        actions: <Widget>[
+        title: const Text("Add Task"),
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
           IconButton(
-              icon: Icon(
-                Icons.save,
-                color: Colors.white,
-              ),
-              onPressed: () => saveTask())
+            icon: const Icon(Icons.save),
+            onPressed: _saveTask,
+          ),
         ],
-        leading: IconButton(
-            icon: Icon(
-              Icons.arrow_back_ios,
-              color: Colors.white,
-            ),
-            onPressed: () {
-              Navigator.of(context).pop();
-            }),
       ),
       body: SingleChildScrollView(
-        child: Container(
-          padding: EdgeInsets.all(10),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
           child: Column(
-            children: <Widget>[
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               TextField(
-                controller: titleController,
-                decoration: InputDecoration(
-                    border: OutlineInputBorder(),
-                    labelText: "Title",
-                    labelStyle:
-                        TextStyle(fontSize: 22, fontWeight: FontWeight.w600)),
+                controller: _titleController,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: "Title",
+                  hintText: "Enter task title",
+                ),
+                textCapitalization: TextCapitalization.sentences,
               ),
-              Container(
-                height: 50,
-                margin: EdgeInsets.only(top: 20),
-                padding: EdgeInsets.only(left: 10),
-                decoration: BoxDecoration(
-                    border: Border.all(),
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.all(Radius.circular(10))),
-                child: InkWell(
-                  onTap: () async {
-                    dateTime = await CommonUtils.setCalender(context);
-                    dateController.text =
-                        CommonUtils.getDate(dateTime.toIso8601String());
-                  },
+              const SizedBox(height: 20),
+              InkWell(
+                onTap: _selectDate,
+                child: IgnorePointer(
                   child: TextField(
-                    readOnly: true,
-                    enabled: false,
-                    controller: dateController,
-                    decoration: InputDecoration(
-                        border: InputBorder.none,
-                        suffixIcon: Icon(Icons.calendar_today),
-                        hintText: "Choose Date",
-                        hintStyle: TextStyle(fontSize: 13)),
+                    controller: _dateController,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: "Due Date",
+                      hintText: "Choose Date",
+                      suffixIcon: Icon(Icons.calendar_today),
+                    ),
                   ),
                 ),
               ),
-              Container(
-                height: 200,
-                margin: EdgeInsets.only(top: 20),
-                padding: EdgeInsets.only(left: 10),
-                decoration: BoxDecoration(
-                    border: Border.all(),
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.all(Radius.circular(10))),
-                child: TextField(
-                  controller: descriptionController,
-                  keyboardType: TextInputType.multiline,
-                  maxLines: 10,
-                  decoration: InputDecoration.collapsed(
-                      hintText: "Description",
-                      hintStyle: TextStyle(fontSize: 13)),
+              const SizedBox(height: 20),
+              TextField(
+                controller: _descriptionController,
+                maxLines: 6,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: "Description",
+                  hintText: "Enter task description",
+                  alignLabelWithHint: true,
                 ),
+                textCapitalization: TextCapitalization.sentences,
               ),
-              Container(
-                margin: EdgeInsets.only(top: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text("Select Priority"),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
-                      child: StreamBuilder<List<PriorityLevel>>(
-                          stream: _streamController.stream,
-                          initialData: priorityLevelList,
-                          builder: (context, snapshot) {
-                            return Row(
-                              mainAxisSize: MainAxisSize.max,
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: priorityLevelList
-                                  .map((e) => Expanded(
-                                        child: GestureDetector(
-                                          onTap: () {
-                                            e.isSelect = true;
-                                            priorityLevelList
-                                                .forEach((element) {
-                                              if (e.priority !=
-                                                  element.priority) {
-                                                element.isSelect = false;
-                                              }
-                                            });
-                                            selectedPriority = e;
-                                            _streamController.sink
-                                                .add(priorityLevelList);
-                                          },
-                                          child: Card(
-                                            color: e.isSelect
-                                                ? Colors.blueAccent
-                                                : Colors.white,
-                                            child: Container(
-                                              alignment: Alignment.center,
-                                              padding: EdgeInsets.only(
-                                                  top: 5,
-                                                  left: 10,
-                                                  right: 10,
-                                                  bottom: 5),
-                                              child: Text(
-                                                e.title,
-                                                style: TextStyle(
-                                                    color: e.isSelect
-                                                        ? Colors.white
-                                                        : Colors.black),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ))
-                                  .toList(),
-                            );
-                          }),
-                    ),
-                  ],
-                ),
-              )
+              const SizedBox(height: 20),
+              Text(
+                "Select Priority",
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 12),
+              StreamBuilder<List<PriorityLevel>>(
+                stream: _streamController.stream,
+                initialData: _priorityLevelList,
+                builder: (context, snapshot) {
+                  return Row(
+                    children: _priorityLevelList.map((priority) {
+                      return Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: GestureDetector(
+                            onTap: () => _selectPriority(priority),
+                            child: Card(
+                              elevation: priority.isSelected ? 4 : 1,
+                              color: priority.isSelected
+                                  ? priority.color
+                                  : Colors.white,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                  horizontal: 8,
+                                ),
+                                child: Column(
+                                  children: [
+                                    Icon(
+                                      _getPriorityIcon(priority.priority),
+                                      color: priority.isSelected
+                                          ? Colors.white
+                                          : priority.color,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      priority.title,
+                                      style: TextStyle(
+                                        color: priority.isSelected
+                                            ? Colors.white
+                                            : Colors.black87,
+                                        fontWeight: priority.isSelected
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
             ],
           ),
         ),
@@ -206,14 +164,68 @@ class _AddTaskState extends State<AddTask> {
     );
   }
 
-  saveTask() {
-    TodoTask task = TodoTask(
-        title: titleController.text,
-        description: descriptionController.text,
-        taskDate: dateTime.toIso8601String(),
-        createdDate: DateTime.now().toIso8601String(),
-        level: selectedPriority.index,
-        isCompleted: 0);
+  IconData _getPriorityIcon(Priority priority) {
+    switch (priority) {
+      case Priority.high:
+        return Icons.priority_high;
+      case Priority.medium:
+        return Icons.remove;
+      case Priority.low:
+        return Icons.keyboard_arrow_down;
+    }
+  }
+
+  Future<void> _selectDate() async {
+    final DateTime? selectedDate = await CommonUtils.setCalendar(context);
+    if (selectedDate != null) {
+      setState(() {
+        _selectedDateTime = selectedDate;
+        _dateController.text = CommonUtils.getDate(selectedDate.toIso8601String());
+      });
+    }
+  }
+
+  void _selectPriority(PriorityLevel priority) {
+    setState(() {
+      for (final element in _priorityLevelList) {
+        element.isSelected = false;
+      }
+      priority.isSelected = true;
+      _selectedPriority = priority;
+    });
+    _streamController.add(_priorityLevelList);
+  }
+
+  void _saveTask() {
+    if (_titleController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a title')),
+      );
+      return;
+    }
+
+    if (_selectedDateTime == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a due date')),
+      );
+      return;
+    }
+
+    if (_selectedPriority == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a priority level')),
+      );
+      return;
+    }
+
+    final task = TodoTask(
+      title: _titleController.text.trim(),
+      description: _descriptionController.text.trim(),
+      taskDate: _selectedDateTime!.toIso8601String(),
+      createdDate: DateTime.now().toIso8601String(),
+      level: _selectedPriority!.index,
+      isCompleted: 0,
+    );
 
     Navigator.of(context).pop(task);
   }
