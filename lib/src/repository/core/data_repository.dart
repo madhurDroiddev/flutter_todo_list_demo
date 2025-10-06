@@ -4,8 +4,7 @@ import 'database_helper.dart';
 
 mixin DataRepository<T, K> {
   /// Data Provider
-  DatabaseProvider databaseProvider;
-
+  DatabaseProvider get databaseProvider => DatabaseProvider();
 
   /// CRUD Operations
   Future<int> insert(T data);

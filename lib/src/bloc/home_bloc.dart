@@ -1,46 +1,65 @@
 import 'dart:async';
 
-import 'package:firebasechat/src/bloc/base_bloc.dart';
-import 'package:firebasechat/src/modals/task.dart';
-import 'package:firebasechat/src/repository/repo/TaskDatabaseRepository.dart';
+import 'package:task_manager/src/bloc/base_bloc.dart';
+import 'package:task_manager/src/modals/task.dart';
+import 'package:task_manager/src/repository/repo/TaskDatabaseRepository.dart';
 
 class HomeBloc extends Bloc {
-  // 1
-  final _todoTaskController = StreamController<List<TodoTask>>.broadcast();
+  final StreamController<List<TodoTask>> _todoTaskController =
+      StreamController<List<TodoTask>>.broadcast();
+  final TaskDatabaseRepository _repository = TaskDatabaseRepository();
 
-  // 2
   Stream<List<TodoTask>> get taskStream => _todoTaskController.stream;
-
-  // 3
   StreamSink<List<TodoTask>> get taskSink => _todoTaskController.sink;
 
-  // 4
   StreamSubscription<List<TodoTask>> get taskSubscription =>
       taskStream.listen((event) {});
 
-  saveTask(TodoTask task) {
-    TaskDatabaseRepository repository = TaskDatabaseRepository();
-    repository.insert(task).then((value) {
-      fetchAllTasks();
-    });
+  Future<void> saveTask(TodoTask task) async {
+    try {
+      await _repository.insert(task);
+      await fetchAllTasks();
+    } catch (e) {
+      // Handle error appropriately
+      print('Error saving task: $e');
+    }
   }
 
-  fetchAllTasks() async {
-    TaskDatabaseRepository repository = TaskDatabaseRepository();
-    repository.fetchAllRows(await isNetworkAvailable).then((value) {
-      taskSink.add(value);
-    });
+  Future<void> fetchAllTasks() async {
+    try {
+      final tasks = await _repository.fetchAllRows(await isNetworkAvailable);
+      taskSink.add(tasks);
+    } catch (e) {
+      // Handle error appropriately
+      print('Error fetching tasks: $e');
+      taskSink.add([]);
+    }
   }
 
-  delete(TodoTask task){
-    TaskDatabaseRepository repository = TaskDatabaseRepository();
-    repository.delete(task.id).then((value) {
-      fetchAllTasks();
-    });
+  Future<void> delete(TodoTask task) async {
+    try {
+      if (task.id != null) {
+        await _repository.delete(task.id!);
+        await fetchAllTasks();
+      }
+    } catch (e) {
+      // Handle error appropriately
+      print('Error deleting task: $e');
+    }
+  }
+
+  Future<void> updateTask(TodoTask task) async {
+    try {
+      await _repository.update(task);
+      await fetchAllTasks();
+    } catch (e) {
+      // Handle error appropriately
+      print('Error updating task: $e');
+    }
   }
 
   @override
   void dispose() {
-    _todoTaskController?.close();
+    _todoTaskController.close();
   }
 }

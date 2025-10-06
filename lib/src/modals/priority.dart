@@ -1,14 +1,35 @@
 import 'package:flutter/material.dart';
 
-enum Priority { High, Medium, Low }
+enum Priority { high, medium, low }
 
 class PriorityLevel {
-  int index;
-  String title;
-  Priority priority;
-  bool isSelect;
-  Color color;
+  final int index;
+  final String title;
+  final Priority priority;
+  bool isSelected;
+  final Color color;
 
-  PriorityLevel(this.index,
-      {this.title, this.priority, this.isSelect: false, this.color});
+  PriorityLevel(
+    this.index, {
+    required this.title,
+    required this.priority,
+    this.isSelected = false,
+    required this.color,
+  });
+
+  PriorityLevel copyWith({
+    int? index,
+    String? title,
+    Priority? priority,
+    bool? isSelected,
+    Color? color,
+  }) {
+    return PriorityLevel(
+      index ?? this.index,
+      title: title ?? this.title,
+      priority: priority ?? this.priority,
+      isSelected: isSelected ?? this.isSelected,
+      color: color ?? this.color,
+    );
+  }
 }

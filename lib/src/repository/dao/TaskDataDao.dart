@@ -1,36 +1,33 @@
 
-
-import 'package:firebasechat/src/repository/core/dao.dart';
-
+import 'package:task_manager/src/repository/core/dao.dart';
 import '../../modals/task.dart';
 
 class TodoTaskDao extends Dao<TodoTask> {
-  final tableName = 'TodoTask';
-  final columnId = 'id';
-  final title = 'title';
-  final description = 'description';
-  final taskDate = 'taskDate';
-  final createdDate = 'createdDate';
-  final isCompleted = 'isCompleted';
-  final level = 'level';
+  static const String tableName = 'TodoTask';
+  static const String columnId = 'id';
+  static const String title = 'title';
+  static const String description = 'description';
+  static const String taskDate = 'taskDate';
+  static const String createdDate = 'createdDate';
+  static const String isCompleted = 'isCompleted';
+  static const String level = 'level';
 
   @override
   String get createTableQuery =>
       "CREATE TABLE $tableName($columnId INTEGER PRIMARY KEY AUTOINCREMENT,"
-      " $title TEXT,"
-      " $description TEXT,"
-      " $taskDate TEXT,"
-      " $createdDate TEXT,"
-      " $isCompleted INTEGER,"
-      " $level INTEGER"
+      " $title TEXT NOT NULL,"
+      " $description TEXT NOT NULL,"
+      " $taskDate TEXT NOT NULL,"
+      " $createdDate TEXT NOT NULL,"
+      " $isCompleted INTEGER NOT NULL,"
+      " $level INTEGER NOT NULL"
       ")";
 
   String createTable(Map<String, dynamic> query, String primaryKey,
-      {bool isAutoIncrement: false}) {
-    Map<String, String> map = Map();
+      {bool isAutoIncrement = false}) {
+    Map<String, String> map = <String, String>{};
 
     /// Create map which contain keys name and it's data type
-
     query.forEach((key, value) {
       if (value is int) {
         map[key] = "INTEGER";
@@ -42,30 +39,23 @@ class TodoTaskDao extends Dao<TodoTask> {
     });
 
     /// Creating Query using keys and it's data types
-
-    String _query = "CREATE TABLE $tableName(";
+    String queryString = "CREATE TABLE $tableName(";
 
     List<String> columns = [];
 
     map.forEach((key, value) {
-      columns.add(" " +
-          key +
-          " " +
-          value +
-          (primaryKey == key
-              ? " PRIMARY KEY " + (isAutoIncrement ? "AUTOINCREMENT" : "")
-              : ""));
+      columns.add(" $key $value${primaryKey == key ? " PRIMARY KEY${isAutoIncrement ? " AUTOINCREMENT" : ""}" : ""}");
     });
 
-    _query = _query + columns.join(",") + ")";
+    queryString = "$queryString${columns.join(",")} )";
 
-    return _query;
+    return queryString;
   }
 
   @override
   List<TodoTask> fromList(List<Map<String, dynamic>> query) {
     List<TodoTask> data = <TodoTask>[];
-    for (Map map in query) {
+    for (Map<String, dynamic> map in query) {
       data.add(fromMap(map));
     }
     return data;
@@ -73,8 +63,7 @@ class TodoTaskDao extends Dao<TodoTask> {
 
   @override
   TodoTask fromMap(Map<String, dynamic> query) {
-    TodoTask data = TodoTask.fromMap(query);
-    return data;
+    return TodoTask.fromMap(query);
   }
 
   @override
